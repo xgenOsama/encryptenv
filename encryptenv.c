@@ -7,11 +7,17 @@
 // Caesar Cipher Encryption function
 char* caesar_encrypt(char* data, size_t length, int shift) {
     for (size_t i = 0; i < length; i++) {
-        // Encrypt only alphabetical characters
+        // Encrypt alphabetical characters
         if (data[i] >= 'A' && data[i] <= 'Z') {
             data[i] = 'A' + (data[i] - 'A' + shift) % 26;
         } else if (data[i] >= 'a' && data[i] <= 'z') {
             data[i] = 'a' + (data[i] - 'a' + shift) % 26;
+        }
+        // Encrypt numbers and dot (for IPs)
+        else if (data[i] >= '0' && data[i] <= '9') {
+            data[i] = '0' + (data[i] - '0' + shift) % 10;
+        } else if (data[i] == '.') {
+            data[i] = (data[i] == '.') ? '*' : '.'; // Just an example transformation for the dot
         }
     }
     return data;
@@ -20,11 +26,17 @@ char* caesar_encrypt(char* data, size_t length, int shift) {
 // Caesar Cipher Decryption function
 char* caesar_decrypt(char* data, size_t length, int shift) {
     for (size_t i = 0; i < length; i++) {
-        // Decrypt only alphabetical characters
+        // Decrypt alphabetical characters
         if (data[i] >= 'A' && data[i] <= 'Z') {
             data[i] = 'A' + (data[i] - 'A' - shift + 26) % 26;
         } else if (data[i] >= 'a' && data[i] <= 'z') {
             data[i] = 'a' + (data[i] - 'a' - shift + 26) % 26;
+        }
+        // Decrypt numbers and dot (for IPs)
+        else if (data[i] >= '0' && data[i] <= '9') {
+            data[i] = '0' + (data[i] - '0' - shift + 10) % 10;
+        } else if (data[i] == '*') {
+            data[i] = '.';
         }
     }
     return data;
@@ -33,7 +45,11 @@ char* caesar_decrypt(char* data, size_t length, int shift) {
 // Function to resolve variable references in a value
 char* resolve_variable_references(const char *value, const char **keys, const char **values, int count) {
     char *resolved_value = strdup(value);
-    char *temp_value = NULL;
+    if (resolved_value == NULL) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+    char *temp_value;
 
     do {
         temp_value = resolved_value;
@@ -61,6 +77,10 @@ char* resolve_variable_references(const char *value, const char **keys, const ch
                     if (var_value) {
                         size_t new_length = (var_placeholder - resolved_value) + strlen(var_value) + strlen(var_end + 1) + 1;
                         char *new_resolved_value = malloc(new_length);
+                        if (new_resolved_value == NULL) {
+                            perror("Memory allocation failed");
+                            exit(EXIT_FAILURE);
+                        }
                         strncpy(new_resolved_value, resolved_value, var_placeholder - resolved_value);
                         strcpy(new_resolved_value + (var_placeholder - resolved_value), var_value);
                         strcat(new_resolved_value, var_end + 1);
@@ -97,6 +117,10 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "            data[i] = 'A' + (data[i] - 'A' - shift + 26) %% 26;\n");
     fprintf(fp, "        } else if (data[i] >= 'a' && data[i] <= 'z') {\n");
     fprintf(fp, "            data[i] = 'a' + (data[i] - 'a' - shift + 26) %% 26;\n");
+    fprintf(fp, "        } else if (data[i] >= '0' && data[i] <= '9') {\n");
+    fprintf(fp, "            data[i] = '0' + (data[i] - '0' - shift + 10) %% 10;\n");
+    fprintf(fp, "        } else if (data[i] == '*') {\n");
+    fprintf(fp, "            data[i] = '.';\n");
     fprintf(fp, "        }\n");
     fprintf(fp, "    }\n");
     fprintf(fp, "    return data;\n");
@@ -110,6 +134,10 @@ void generate_new_program(const char **keys, const char **values, int count) {
 
         // Replace double quotes in values with escaped double quotes
         char *escaped_value = malloc(length_value * 2 + 1); // Allocate enough space
+        if (escaped_value == NULL) {
+            perror("Memory allocation failed");
+            exit(EXIT_FAILURE);
+        }
         char *p = escaped_value;
         for (size_t j = 0; j < length_value; j++) {
             if (values[i][j] == '\"') {
@@ -147,8 +175,8 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "            return decrypted_value;\n");
     fprintf(fp, "        }\n");
     fprintf(fp, "    }\n");
-    fprintf(fp, "    return NULL;\n");
-    fprintf(fp, "}\n\n");
+    fprintf(fp, "    return NULL; // Not found\n");
+    fprintf(fp, "}\n");
 
     fclose(fp);
 }
@@ -164,37 +192,44 @@ void parse_env_file(const char *filename, const char ***keys, const char ***valu
     char line[256];
     *count = 0;
 
-    // First, count the number of lines (key-value pairs)
+    // Count the number of valid lines (key-value pairs)
     while (fgets(line, sizeof(line), fp)) {
-        if (strchr(line, '=') != NULL) {
+        if (line[0] != '#' && line[0] != '\n') {
             (*count)++;
         }
     }
 
-    // Allocate memory for the keys and values arrays
-    *keys = malloc(*count * sizeof(char *));
-    *values = malloc(*count * sizeof(char *));
+    // Allocate memory for keys and values
+    *keys = malloc(*count * sizeof(char*));
+    *values = malloc(*count * sizeof(char*));
+    if (*keys == NULL || *values == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        fclose(fp);
+        exit(EXIT_FAILURE);
+    }
 
     rewind(fp); // Reset file pointer to the beginning
 
-    int i = 0;
-    while (fgets(line, sizeof(line), fp)) {
-        if (strchr(line, '=') != NULL) {
-            line[strcspn(line, "\n")] = 0; // Remove newline character
+    int index = 0;
+    // Read key-value pairs
+    while (fgets(line, sizeof(line), fp) && index < *count) {
+        if (line[0] != '#' && line[0] != '\n') {
+            char *key = strtok(line, "=");
+            char *value = strtok(NULL, "\n");
 
-            // Split the line into key and value
-            char *equal_sign = strchr(line, '=');
-            if (equal_sign != NULL) {
-                size_t key_len = equal_sign - line;
-                (*keys)[i] = strndup(line, key_len);
-
-                // Value is the part after '='
-                char *value = strdup(equal_sign + 1);
-                (*values)[i] = resolve_variable_references(value, *keys, *values, *count);
-
-                free(value); // Free the original value string
-                i++;
+            if (key == NULL || value == NULL) {
+                fprintf(stderr, "Invalid line format: %s", line);
+                continue; // Skip invalid lines
             }
+
+            (*keys)[index] = strdup(key);
+            (*values)[index] = strdup(value);
+            if ((*keys)[index] == NULL || (*values)[index] == NULL) {
+                fprintf(stderr, "Memory allocation failed\n");
+                fclose(fp);
+                exit(EXIT_FAILURE);
+            }
+            index++;
         }
     }
 
@@ -209,13 +244,13 @@ int main() {
     // Parse the .env file
     parse_env_file(".env", &keys, &values, &count);
 
-    // Generate the new C program with encrypted values
+    // Generate a new C program with the environment variables
     generate_new_program(keys, values, count);
 
-    // Free allocated memory
+    // Clean up allocated memory
     for (int i = 0; i < count; i++) {
-        free((char *)keys[i]);
-        free((char *)values[i]);
+        free((void*)keys[i]);
+        free((void*)values[i]);
     }
     free(keys);
     free(values);

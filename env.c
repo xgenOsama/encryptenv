@@ -9,6 +9,10 @@ char* caesar_decrypt(char* data, size_t length, int shift) {
             data[i] = 'A' + (data[i] - 'A' - shift + 26) % 26;
         } else if (data[i] >= 'a' && data[i] <= 'z') {
             data[i] = 'a' + (data[i] - 'a' - shift + 26) % 26;
+        } else if (data[i] >= '0' && data[i] <= '9') {
+            data[i] = '0' + (data[i] - '0' - shift + 10) % 10;
+        } else if (data[i] == '*') {
+            data[i] = '.';
         }
     }
     return data;
@@ -17,15 +21,15 @@ char* caesar_decrypt(char* data, size_t length, int shift) {
 const char *env_vars[] = {
     "DSS_QDPH=hqfubswhqy",
     "DSS_HQY=orfdo",
-    "DSS_NHB=edvh64:Oba1HsvIg9nhA0WDdHhtU0pWd460RuZTxY3dpx9wwnX=",
+    "DSS_NHB=edvh97:Oba4HsvIg2nhA3WDdHhtU3pWd793RuZTxY6dpx2wwnX=",
     "DSS_GHEXJ=wuxh",
-    "DSS_XUO=kwws://hqfubswhqy.whvw",
+    "DSS_XUO=kwws://hqfubswhqy*whvw",
     "ORJ_FKDQQHO=vwdfn",
     "ORJ_GHSUHFDWLRQV_FKDQQHO=qxoo",
     "ORJ_OHYHO=ghexj",
     "GE_FRQQHFWLRQ=pbvto",
-    "GE_KRVW=127.0.0.1",
-    "GE_SRUW=3306",
+    "GE_KRVW=450*3*3*4",
+    "GE_SRUW=6639",
     "GE_GDWDEDVH=hqfubswhqy",
     "GE_XVHUQDPH=urrw",
     "GE_SDVVZRUG=sdvvzrug",
@@ -34,37 +38,37 @@ const char *env_vars[] = {
     "ILOHVBVWHP_GLVN=orfdo",
     "TXHXH_FRQQHFWLRQ=vbqf",
     "VHVVLRQ_GULYHU=iloh",
-    "VHVVLRQ_OLIHWLPH=120",
-    "PHPFDFKHG_KRVW=127.0.0.1",
-    "UHGLV_KRVW=127.0.0.1",
+    "VHVVLRQ_OLIHWLPH=453",
+    "PHPFDFKHG_KRVW=450*3*3*4",
+    "UHGLV_KRVW=450*3*3*4",
     "UHGLV_SDVVZRUG=qxoo",
-    "UHGLV_SRUW=6379",
+    "UHGLV_SRUW=9602",
     "PDLO_PDLOHU=vpws",
     "PDLO_KRVW=pdloslw",
-    "PDLO_SRUW=1025",
+    "PDLO_SRUW=4358",
     "PDLO_XVHUQDPH=qxoo",
     "PDLO_SDVVZRUG=qxoo",
     "PDLO_HQFUBSWLRQ=qxoo",
-    "PDLO_IURP_DGGUHVV=khoor@hadpsoh.frp",
-    "PDLO_IURP_QDPH=\"hqfubswhqy\"",
-    "DZV_DFFHVV_NHB_LG=",
-    "DZV_VHFUHW_DFFHVV_NHB=",
-    "DZV_GHIDXOW_UHJLRQ=xv-hdvw-1",
-    "DZV_EXFNHW=",
+    "PDLO_IURP_DGGUHVV=khoor@hadpsoh*frp",
+    "PDLO_IURP_QDPH=\"${DSS_QDPH}\"",
+    "DZV_DFFHVV_NHB_LG=qxoo",
+    "DZV_VHFUHW_DFFHVV_NHB=qxoo",
+    "DZV_GHIDXOW_UHJLRQ=xv-hdvw-4",
+    "DZV_EXFNHW=qxoo",
     "DZV_XVH_SDWK_VWBOH_HQGSRLQW=idovh",
-    "SXVKHU_DSS_LG=",
-    "SXVKHU_DSS_NHB=",
-    "SXVKHU_DSS_VHFUHW=",
-    "SXVKHU_KRVW=",
-    "SXVKHU_SRUW=443",
+    "SXVKHU_DSS_LG=qxoo",
+    "SXVKHU_DSS_NHB=qxoo",
+    "SXVKHU_DSS_VHFUHW=qxoo",
+    "SXVKHU_KRVW=qxoo",
+    "SXVKHU_SRUW=776",
     "SXVKHU_VFKHPH=kwwsv",
-    "SXVKHU_DSS_FOXVWHU=pw1",
-    "YLWH_DSS_QDPH=\"hqfubswhqy\"",
-    "YLWH_SXVKHU_DSS_NHB=\"\"",
-    "YLWH_SXVKHU_KRVW=\"\"",
-    "YLWH_SXVKHU_SRUW=\"443\"",
-    "YLWH_SXVKHU_VFKHPH=\"kwwsv\"",
-    "YLWH_SXVKHU_DSS_FOXVWHU=\"pw1\"",
+    "SXVKHU_DSS_FOXVWHU=pw4",
+    "YLWH_DSS_QDPH=\"${DSS_QDPH}\"",
+    "YLWH_SXVKHU_DSS_NHB=\"${SXVKHU_DSS_NHB}\"",
+    "YLWH_SXVKHU_KRVW=\"${SXVKHU_KRVW}\"",
+    "YLWH_SXVKHU_SRUW=\"${SXVKHU_SRUW}\"",
+    "YLWH_SXVKHU_VFKHPH=\"${SXVKHU_VFKHPH}\"",
+    "YLWH_SXVKHU_DSS_FOXVWHU=\"${SXVKHU_DSS_FOXVWHU}\"",
 };
 
 const char* get_env_value(const char *key) {
@@ -83,6 +87,5 @@ const char* get_env_value(const char *key) {
             return decrypted_value;
         }
     }
-    return NULL;
+    return NULL; // Not found
 }
-
