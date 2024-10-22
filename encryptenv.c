@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SHIFT 3  
+#define SHIFT 3  // Shift value for Caesar Cipher
 
 // Caesar Cipher Encryption function
 char* caesar_encrypt(char* data, size_t length, int shift) {
@@ -30,6 +30,52 @@ char* caesar_decrypt(char* data, size_t length, int shift) {
     return data;
 }
 
+// Function to resolve variable references in a value
+char* resolve_variable_references(const char *value, const char **keys, const char **values, int count) {
+    char *resolved_value = strdup(value);
+    char *temp_value = NULL;
+
+    do {
+        temp_value = resolved_value;
+        for (int i = 0; i < count; i++) {
+            char *var_placeholder = strstr(resolved_value, "${");
+            if (var_placeholder != NULL) {
+                char *var_end = strchr(var_placeholder, '}');
+                if (var_end) {
+                    // Extract variable name
+                    size_t var_name_length = var_end - (var_placeholder + 2);
+                    char var_name[256];
+                    strncpy(var_name, var_placeholder + 2, var_name_length);
+                    var_name[var_name_length] = '\0';
+
+                    // Find the variable value
+                    const char *var_value = NULL;
+                    for (int j = 0; j < count; j++) {
+                        if (strcmp(var_name, keys[j]) == 0) {
+                            var_value = values[j];
+                            break;
+                        }
+                    }
+
+                    // Replace the placeholder with the variable value if found
+                    if (var_value) {
+                        size_t new_length = (var_placeholder - resolved_value) + strlen(var_value) + strlen(var_end + 1) + 1;
+                        char *new_resolved_value = malloc(new_length);
+                        strncpy(new_resolved_value, resolved_value, var_placeholder - resolved_value);
+                        strcpy(new_resolved_value + (var_placeholder - resolved_value), var_value);
+                        strcat(new_resolved_value, var_end + 1);
+
+                        free(resolved_value);
+                        resolved_value = new_resolved_value;
+                    }
+                }
+            }
+        }
+    } while (temp_value != resolved_value); // Loop until no more replacements are made
+
+    return resolved_value;
+}
+
 // Function to write a new C program with the environment variables
 void generate_new_program(const char **keys, const char **values, int count) {
     FILE *fp = fopen("env.c", "w");
@@ -42,7 +88,7 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "#include <stdio.h>\n");
     fprintf(fp, "#include <stdlib.h>\n");
     fprintf(fp, "#include <string.h>\n\n");
-    fprintf(fp,"#define SHIFT 3\n");
+    fprintf(fp, "#define SHIFT 3\n");
 
     // Caesar Cipher Decryption function in the new program
     fprintf(fp, "char* caesar_decrypt(char* data, size_t length, int shift) {\n");
@@ -61,8 +107,22 @@ void generate_new_program(const char **keys, const char **values, int count) {
     for (int i = 0; i < count; i++) {
         size_t length_key = strlen(keys[i]);
         size_t length_value = strlen(values[i]);
+
+        // Replace double quotes in values with escaped double quotes
+        char *escaped_value = malloc(length_value * 2 + 1); // Allocate enough space
+        char *p = escaped_value;
+        for (size_t j = 0; j < length_value; j++) {
+            if (values[i][j] == '\"') {
+                *p++ = '\\'; // Escape the double quote
+            }
+            *p++ = values[i][j];
+        }
+        *p = '\0'; // Null-terminate the escaped string
+
         // Encrypt the key-value pairs
-        fprintf(fp, "    \"%s=%s\",\n", caesar_encrypt(strdup(keys[i]), length_key, SHIFT), caesar_encrypt(strdup(values[i]), length_value, SHIFT));
+        fprintf(fp, "    \"%s=%s\",\n", caesar_encrypt(strdup(keys[i]), length_key, SHIFT), caesar_encrypt(escaped_value, strlen(escaped_value), SHIFT));
+
+        free(escaped_value); // Free the escaped string
     }
     fprintf(fp, "};\n\n");
 
@@ -74,7 +134,7 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "        const char *env = env_vars[i];\n");
     fprintf(fp, "        const char *env_value = strchr(env, '=');\n");
     fprintf(fp, "        if (env_value == NULL) continue;\n");
-    
+
     // Decrypt the key part
     fprintf(fp, "        strncpy(decrypted_key, env, env_value - env);\n");
     fprintf(fp, "        decrypted_key[env_value - env] = '\\0';\n");
@@ -89,7 +149,6 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "    }\n");
     fprintf(fp, "    return NULL;\n");
     fprintf(fp, "}\n\n");
-
 
     fclose(fp);
 }
@@ -130,7 +189,10 @@ void parse_env_file(const char *filename, const char ***keys, const char ***valu
                 (*keys)[i] = strndup(line, key_len);
 
                 // Value is the part after '='
-                (*values)[i] = strdup(equal_sign + 1);
+                char *value = strdup(equal_sign + 1);
+                (*values)[i] = resolve_variable_references(value, *keys, *values, *count);
+
+                free(value); // Free the original value string
                 i++;
             }
         }
@@ -140,20 +202,17 @@ void parse_env_file(const char *filename, const char ***keys, const char ***valu
 }
 
 int main() {
-    const char **keys, **values;
+    const char **keys;
+    const char **values;
     int count;
 
-    // Step 1: Parse the .env file
+    // Parse the .env file
     parse_env_file(".env", &keys, &values, &count);
 
-    // Step 2: Generate the new C program
+    // Generate the new C program with encrypted values
     generate_new_program(keys, values, count);
 
-    // Step 3: Compile the new C program
-    system("gcc  -shared  -o env.so env.c  -fPIC");
-
-
-    // Free the allocated memory
+    // Free allocated memory
     for (int i = 0; i < count; i++) {
         free((char *)keys[i]);
         free((char *)values[i]);
