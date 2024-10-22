@@ -5,7 +5,7 @@
 #define SHIFT 3  // Shift value for Caesar Cipher
 
 // Caesar Cipher Encryption function
-char* caesar_encrypt(char* data, size_t length, int shift) {
+char* encrypt(char* data, size_t length, int shift) {
     for (size_t i = 0; i < length; i++) {
         // Encrypt alphabetical characters
         if (data[i] >= 'A' && data[i] <= 'Z') {
@@ -24,7 +24,7 @@ char* caesar_encrypt(char* data, size_t length, int shift) {
 }
 
 // Caesar Cipher Decryption function
-char* caesar_decrypt(char* data, size_t length, int shift) {
+char* decrypt(char* data, size_t length, int shift) {
     for (size_t i = 0; i < length; i++) {
         // Decrypt alphabetical characters
         if (data[i] >= 'A' && data[i] <= 'Z') {
@@ -111,7 +111,7 @@ void generate_new_program(const char **keys, const char **values, int count) {
     fprintf(fp, "#define SHIFT 3\n");
 
     // Caesar Cipher Decryption function in the new program
-    fprintf(fp, "char* caesar_decrypt(char* data, size_t length, int shift) {\n");
+    fprintf(fp, "char* decrypt(char* data, size_t length, int shift) {\n");
     fprintf(fp, "    for (size_t i = 0; i < length; i++) {\n");
     fprintf(fp, "        if (data[i] >= 'A' && data[i] <= 'Z') {\n");
     fprintf(fp, "            data[i] = 'A' + (data[i] - 'A' - shift + 26) %% 26;\n");
@@ -148,7 +148,7 @@ void generate_new_program(const char **keys, const char **values, int count) {
         *p = '\0'; // Null-terminate the escaped string
 
         // Encrypt the key-value pairs
-        fprintf(fp, "    \"%s=%s\",\n", caesar_encrypt(strdup(keys[i]), length_key, SHIFT), caesar_encrypt(escaped_value, strlen(escaped_value), SHIFT));
+        fprintf(fp, "    \"%s=%s\",\n", encrypt(strdup(keys[i]), length_key, SHIFT), encrypt(escaped_value, strlen(escaped_value), SHIFT));
 
         free(escaped_value); // Free the escaped string
     }
@@ -166,12 +166,12 @@ void generate_new_program(const char **keys, const char **values, int count) {
     // Decrypt the key part
     fprintf(fp, "        strncpy(decrypted_key, env, env_value - env);\n");
     fprintf(fp, "        decrypted_key[env_value - env] = '\\0';\n");
-    fprintf(fp, "        caesar_decrypt(decrypted_key, strlen(decrypted_key), SHIFT);\n");
+    fprintf(fp, "        decrypt(decrypted_key, strlen(decrypted_key), SHIFT);\n");
 
     // Compare the decrypted key with the input key
     fprintf(fp, "        if (strcmp(decrypted_key, key) == 0) {\n");
     fprintf(fp, "            strncpy(decrypted_value, env_value + 1, sizeof(decrypted_value));\n");
-    fprintf(fp, "            caesar_decrypt(decrypted_value, strlen(decrypted_value), SHIFT);\n");
+    fprintf(fp, "            decrypt(decrypted_value, strlen(decrypted_value), SHIFT);\n");
     fprintf(fp, "            return decrypted_value;\n");
     fprintf(fp, "        }\n");
     fprintf(fp, "    }\n");

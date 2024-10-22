@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define SHIFT 3
-char* caesar_decrypt(char* data, size_t length, int shift) {
+char* decrypt(char* data, size_t length, int shift) {
     for (size_t i = 0; i < length; i++) {
         if (data[i] >= 'A' && data[i] <= 'Z') {
             data[i] = 'A' + (data[i] - 'A' - shift + 26) % 26;
@@ -80,10 +80,10 @@ const char* get_env_value(const char *key) {
         if (env_value == NULL) continue;
         strncpy(decrypted_key, env, env_value - env);
         decrypted_key[env_value - env] = '\0';
-        caesar_decrypt(decrypted_key, strlen(decrypted_key), SHIFT);
+        decrypt(decrypted_key, strlen(decrypted_key), SHIFT);
         if (strcmp(decrypted_key, key) == 0) {
             strncpy(decrypted_value, env_value + 1, sizeof(decrypted_value));
-            caesar_decrypt(decrypted_value, strlen(decrypted_value), SHIFT);
+            decrypt(decrypted_value, strlen(decrypted_value), SHIFT);
             return decrypted_value;
         }
     }
